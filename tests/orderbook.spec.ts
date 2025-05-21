@@ -317,4 +317,39 @@ describe("orderbook", () => {
     // assert - Check the orderbook
     expect(bestAsk?.quantity).toBe(3); // 5 - 2
   });
+
+  it("should record trades in trade history log", () => {
+    // arrange - Create an orderbook
+    const orderBook = new OrderBook();
+
+    const buyOrder: Order = {
+      id: "b1",
+      type: "buy",
+      price: 100,
+      quantity: 5,
+      timestamp: Date.now(),
+    };
+
+    const sellOrder: Order = {
+      id: "s1",
+      type: "sell",
+      price: 95,
+      quantity: 3,
+      timestamp: Date.now(),
+    };
+
+    // Add resting order first
+    orderBook.addOrder(sellOrder);
+    orderBook.addOrder(buyOrder);
+    const trades = orderBook.getTradeHistory();
+
+    // assert - Check the orderbook
+    expect(trades.length).toBe(1);
+    expect(trades[0]).toMatchObject({
+      buyOrderId: "b1",
+      sellOrderId: "s1",
+      price: 95, // now matches sell resting order price
+      quantity: 3,
+    });
+  });
 });

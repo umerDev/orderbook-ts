@@ -8,6 +8,14 @@ export interface Order {
   timestamp: number;
 }
 
+export interface Trade {
+  buyOrderId: string;
+  sellOrderId: string;
+  price: number;
+  quantity: number;
+  timestamp: number;
+}
+
 export interface OrderBook {
   buyOrders: Order[];
   sellOrders: Order[];

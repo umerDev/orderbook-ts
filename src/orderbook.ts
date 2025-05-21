@@ -1,8 +1,9 @@
-import { Order } from "./orderbook.types";
+import { Order, Trade } from "./orderbook.types";
 
 export class OrderBook {
   private buyOrders: Order[] = [];
   private sellOrders: Order[] = [];
+  private tradeHistory: Trade[] = [];
 
   constructor() {
     // Initialize the order book with empty buy and sell orders
@@ -13,6 +14,11 @@ export class OrderBook {
       buyOrders: this.buyOrders,
       sellOrders: this.sellOrders,
     };
+  }
+
+  // Add new method:
+  getTradeHistory(): Trade[] {
+    return this.tradeHistory;
   }
 
   getBestAsk(): Order | null {
@@ -111,6 +117,14 @@ export class OrderBook {
       const tradedQty = Math.min(order.quantity, sell.quantity);
       console.log(`Limit BUY matched: ${tradedQty} @ ${sell.price}`);
 
+      this.tradeHistory.push({
+        buyOrderId: order.id,
+        sellOrderId: sell.id,
+        price: sell.price,
+        quantity: tradedQty,
+        timestamp: Date.now(),
+      });
+
       order.quantity -= tradedQty;
       sell.quantity -= tradedQty;
 
@@ -138,6 +152,14 @@ export class OrderBook {
 
       const tradedQty = Math.min(order.quantity, buy.quantity);
       console.log(`Limit SELL matched: ${tradedQty} @ ${buy.price}`);
+
+      this.tradeHistory.push({
+        buyOrderId: buy.id,
+        sellOrderId: order.id,
+        price: buy.price,
+        quantity: tradedQty,
+        timestamp: Date.now(),
+      });
 
       order.quantity -= tradedQty;
       buy.quantity -= tradedQty;
