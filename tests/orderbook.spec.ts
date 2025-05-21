@@ -228,4 +228,93 @@ describe("orderbook", () => {
     expect(orderBook.getBestAsk()).toBeNull();
     expect(orderBook.getBestBid()).toBeNull(); // fully matched
   });
+
+  it("should partially match a buy limit order and keep remaining in the book", () => {
+    // arrange - Create an orderbook
+    const orderBook = new OrderBook();
+
+    const sellOrder: Order = {
+      id: "s1",
+      type: "sell",
+      price: 100,
+      quantity: 3,
+      timestamp: Date.now(),
+    };
+
+    const buyOrder: Order = {
+      id: "b1",
+      type: "buy",
+      price: 100,
+      quantity: 5,
+      timestamp: Date.now(),
+    };
+
+    // act - Add orders to the orderbook
+    orderBook.addOrder(sellOrder);
+    orderBook.addOrder(buyOrder);
+
+    const bestBid = orderBook.getBestBid();
+
+    // assert - Check the orderbook
+    expect(bestBid?.quantity).toBe(2); // 5 - 3
+    expect(orderBook.getBestAsk()).toBeNull(); // fully consumed sell order
+  });
+
+  it("should match a sell limit order against buy orders", () => {
+    // arrange - Create an orderbook
+    const orderBook = new OrderBook();
+
+    const buyOrder: Order = {
+      id: "b1",
+      type: "buy",
+      price: 105,
+      quantity: 5,
+      timestamp: Date.now(),
+    };
+
+    const sellOrder: Order = {
+      id: "s1",
+      type: "sell",
+      price: 100,
+      quantity: 5,
+      timestamp: Date.now(),
+    };
+
+    // act - Create an orderbook and add orders
+    orderBook.addOrder(buyOrder);
+    orderBook.addOrder(sellOrder);
+
+    // assert - Check the orderbook
+    expect(orderBook.getBestBid()).toBeNull();
+    expect(orderBook.getBestAsk()).toBeNull();
+  });
+
+  it("should partially match a sell limit order and retain remainder", () => {
+    // arrange - Create an orderbook
+    const orderBook = new OrderBook();
+
+    const buyOrder: Order = {
+      id: "b1",
+      type: "buy",
+      price: 105,
+      quantity: 2,
+      timestamp: Date.now(),
+    };
+
+    const sellOrder: Order = {
+      id: "s1",
+      type: "sell",
+      price: 100,
+      quantity: 5,
+      timestamp: Date.now(),
+    };
+
+    // act - Add orders to the orderbook
+    orderBook.addOrder(buyOrder);
+    orderBook.addOrder(sellOrder);
+    const bestAsk = orderBook.getBestAsk();
+
+    // assert - Check the orderbook
+    expect(bestAsk?.quantity).toBe(3); // 5 - 2
+  });
 });
