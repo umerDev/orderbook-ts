@@ -111,4 +111,121 @@ describe("orderbook", () => {
     expect(cancelOrder).toBe(true);
     expect(orderbook.get().buyOrders).toEqual([]);
   });
+
+  it("should return the lowest price sell order as best ask", () => {
+    // arrange - Create an orderbook
+    const orderBook = new OrderBook();
+
+    const order1: Order = {
+      id: "1",
+      type: "sell",
+      price: 101,
+      quantity: 5,
+      timestamp: Date.now(),
+    };
+    const order2: Order = {
+      id: "2",
+      type: "sell",
+      price: 105,
+      quantity: 3,
+      timestamp: Date.now(),
+    };
+
+    // act - Add orders to the orderbook
+    orderBook.addOrder(order1);
+    orderBook.addOrder(order2);
+
+    // assert - Check the best ask
+    const bestAsk = orderBook.getBestAsk();
+    expect(bestAsk).toEqual(order1);
+  });
+
+  it("should execute a market buy against the best available sell order", () => {
+    // arrange - Create an orderbook
+    const orderBook = new OrderBook();
+
+    const sellOrder: Order = {
+      id: "s1",
+      type: "sell",
+      price: 100,
+      quantity: 5,
+      timestamp: Date.now(),
+    };
+
+    // act - Add a sell order to the orderbook
+    orderBook.addOrder(sellOrder);
+
+    const marketBuy: Order = {
+      id: "mb1",
+      type: "market_buy",
+      price: 0, // price is ignored
+      quantity: 3,
+      timestamp: Date.now(),
+    };
+
+    orderBook.addOrder(marketBuy);
+
+    const bestAsk = orderBook.getBestAsk();
+
+    // assert - Check the orderbook
+    expect(bestAsk?.quantity).toBe(2); // 5 - 3
+  });
+
+  it("should execute a market sell against the best available buy order", () => {
+    // arrange - Create an orderbook
+    const orderBook = new OrderBook();
+
+    const buyOrder: Order = {
+      id: "b1",
+      type: "buy",
+      price: 120,
+      quantity: 4,
+      timestamp: Date.now(),
+    };
+    orderBook.addOrder(buyOrder);
+
+    const marketSell: Order = {
+      id: "ms1",
+      type: "market_sell",
+      price: 0,
+      quantity: 2,
+      timestamp: Date.now(),
+    };
+
+    // act - Add a market sell order to the orderbook
+    orderBook.addOrder(marketSell);
+
+    const bestBid = orderBook.getBestBid();
+
+    // assert - Check the orderbook
+    expect(bestBid?.quantity).toBe(2); // 4 - 2
+  });
+
+  it("should fully match a buy limit order with existing sell order", () => {
+    // arrange - Create an orderbook
+    const orderBook = new OrderBook();
+
+    const sellOrder: Order = {
+      id: "s1",
+      type: "sell",
+      price: 100,
+      quantity: 5,
+      timestamp: Date.now(),
+    };
+
+    const buyOrder: Order = {
+      id: "b1",
+      type: "buy",
+      price: 100,
+      quantity: 5,
+      timestamp: Date.now(),
+    };
+    // act - Add orders to the orderbook
+    orderBook.addOrder(sellOrder);
+    orderBook.addOrder(buyOrder);
+
+    // assert - Check the orderbook
+    expect(orderBook.getBestAsk()).toBeNull();
+    expect(orderBook.getBestBid()).toBeNull(); // fully matched
+  });
 });

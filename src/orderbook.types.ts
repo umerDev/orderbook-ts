@@ -1,4 +1,4 @@
-export type OrderType = "buy" | "sell";
+export type OrderType = "buy" | "sell" | "market_sell" | "market_buy";
 
 export interface Order {
   id: string;
