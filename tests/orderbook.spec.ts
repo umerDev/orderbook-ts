@@ -1,5 +1,5 @@
 import { OrderBook } from "../src/orderbook";
-import { Order } from "../src/orderbook.types";
+import { Order, OrderType } from "../src/orderbook.types";
 
 describe("OrderBook", () => {
   let orderBook: OrderBook;
@@ -10,7 +10,7 @@ describe("OrderBook", () => {
 
   const createOrder = (
     id: string,
-    type: Order["type"],
+    type: OrderType,
     price: number,
     quantity: number,
     timestamp = Date.now()
@@ -20,8 +20,6 @@ describe("OrderBook", () => {
 
   describe("basic operations", () => {
     it("should create an orderbook instance", () => {
-      // Arrange & Act done in beforeEach
-
       // Assert
       expect(orderBook).toBeDefined();
     });
