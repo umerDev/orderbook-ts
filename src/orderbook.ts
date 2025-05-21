@@ -1,37 +1,65 @@
-import { Order, Trade } from "./orderbook.types";
+import { Order, OrderBookInterface, Trade } from "./orderbook.types";
 
-export class OrderBook implements OrderBook {
+/**
+ * OrderBook implementation that manages buy and sell orders
+ * and matches them using price-time priority
+ */
+export class OrderBook implements OrderBookInterface {
   private buyOrders: Order[] = [];
   private sellOrders: Order[] = [];
   private tradeHistory: Trade[] = [];
 
-  constructor() {
-    // Initialize the order book with empty buy and sell orders
-  }
-
-  get() {
+  /**
+   * Returns the current state of the order book
+   */
+  public get() {
     return {
-      buyOrders: this.buyOrders,
-      sellOrders: this.sellOrders,
-      tradeHistory: this.tradeHistory,
+      buyOrders: [...this.buyOrders],
+      sellOrders: [...this.sellOrders],
+      tradeHistory: [...this.tradeHistory],
     };
   }
 
-  getBestAsk(): Order | null {
+  /**
+   * Returns the best ask (lowest sell) order
+   */
+  public getBestAsk(): Order | null {
     if (this.sellOrders.length === 0) return null;
 
-    return this.sellOrders.reduce((best, curr) => {
+    return this.sellOrders.reduce((best, current) => {
       if (
-        curr.price < best.price ||
-        (curr.price === best.price && curr.timestamp < best.timestamp)
+        current.price < best.price ||
+        (current.price === best.price && current.timestamp < best.timestamp)
       ) {
-        return curr;
+        return current;
       }
       return best;
-    });
+    }, this.sellOrders[0]);
   }
 
-  cancelOrder(orderId: string): boolean {
+  /**
+   * Returns the best bid (highest buy) order
+   */
+  public getBestBid(): Order | null {
+    if (this.buyOrders.length === 0) return null;
+
+    return this.buyOrders.reduce((best, current) => {
+      if (
+        current.price > best.price ||
+        (current.price === best.price && current.timestamp < best.timestamp)
+      ) {
+        return current;
+      }
+      return best;
+    }, this.buyOrders[0]);
+  }
+
+  /**
+   * Cancels an order by ID
+   * @param orderId The ID of the order to cancel
+   * @returns True if order was found and canceled, false otherwise
+   */
+  public cancelOrder(orderId: string): boolean {
     for (const orders of [this.buyOrders, this.sellOrders]) {
       const index = orders.findIndex((order) => order.id === orderId);
       if (index !== -1) {
@@ -42,20 +70,165 @@ export class OrderBook implements OrderBook {
     return false;
   }
 
-  getBestBid(): Order | null {
-    if (this.buyOrders.length === 0) return null;
-    return this.buyOrders.reduce((best, curr) => {
-      if (
-        curr.price > best.price ||
-        (curr.price === best.price && curr.timestamp < best.timestamp)
-      ) {
-        return curr;
-      }
-      return best;
-    });
+  /**
+   * Adds an order to the order book and attempts to match it
+   * @param order The order to add
+   * @returns Array of trades that were executed
+   */
+  public addOrder(order: Order): Trade[] {
+    this.validateOrder(order);
+
+    const executedTrades: Trade[] = [];
+
+    switch (order.type) {
+      case "buy":
+        executedTrades.push(...this.matchLimitBuy(order));
+        break;
+      case "sell":
+        executedTrades.push(...this.matchLimitSell(order));
+        break;
+      case "market_buy":
+        executedTrades.push(...this.matchMarketBuy(order));
+        break;
+      case "market_sell":
+        executedTrades.push(...this.matchMarketSell(order));
+        break;
+      default:
+        throw new Error(`Invalid order type: ${order.type}`);
+    }
+
+    return executedTrades;
   }
 
-  matchMarketBuy(order: Order): void {
+  /**
+   * Validates an order to ensure it's properly formed
+   * @param order Order to validate
+   */
+  private validateOrder(order: Order): void {
+    if (!order.id) {
+      throw new Error("Order must have an ID");
+    }
+
+    if (order.quantity <= 0) {
+      throw new Error("Order quantity must be positive");
+    }
+
+    if (order.type === "buy" || order.type === "sell") {
+      if (order.price <= 0) {
+        throw new Error("Limit order price must be positive");
+      }
+    }
+  }
+
+  /**
+   * Creates a trade record and adds it to history
+   */
+  private recordTrade(
+    buyOrder: Order,
+    sellOrder: Order,
+    quantity: number,
+    price: number
+  ): Trade {
+    const trade: Trade = {
+      buyOrderId: buyOrder.id,
+      sellOrderId: sellOrder.id,
+      price,
+      quantity,
+      timestamp: Date.now(),
+    };
+
+    this.tradeHistory.push(trade);
+    return trade;
+  }
+
+  /**
+   * Matches a limit buy order against the sell order book
+   */
+  private matchLimitBuy(order: Order): Trade[] {
+    const executedTrades: Trade[] = [];
+
+    // Sort by best price (lowest) and earliest timestamp
+    this.sellOrders.sort(
+      (a, b) => a.price - b.price || a.timestamp - b.timestamp
+    );
+
+    for (let i = 0; i < this.sellOrders.length && order.quantity > 0; ) {
+      const sellOrder = this.sellOrders[i];
+
+      // Stop matching if sell price is higher than buy limit
+      if (sellOrder.price > order.price) break;
+
+      const tradedQty = Math.min(order.quantity, sellOrder.quantity);
+
+      executedTrades.push(
+        this.recordTrade(order, sellOrder, tradedQty, sellOrder.price)
+      );
+
+      order.quantity -= tradedQty;
+      sellOrder.quantity -= tradedQty;
+
+      if (sellOrder.quantity === 0) {
+        this.sellOrders.splice(i, 1); // Remove completed order
+      } else {
+        i++; // Move to next order
+      }
+    }
+
+    // Add remaining order to book if not fully filled
+    if (order.quantity > 0) {
+      this.buyOrders.push(order);
+    }
+
+    return executedTrades;
+  }
+
+  /**
+   * Matches a limit sell order against the buy order book
+   */
+  private matchLimitSell(order: Order): Trade[] {
+    const executedTrades: Trade[] = [];
+
+    // Sort by best price (highest) and earliest timestamp
+    this.buyOrders.sort(
+      (a, b) => b.price - a.price || a.timestamp - b.timestamp
+    );
+
+    for (let i = 0; i < this.buyOrders.length && order.quantity > 0; ) {
+      const buyOrder = this.buyOrders[i];
+
+      // Stop matching if buy price is lower than sell limit
+      if (buyOrder.price < order.price) break;
+
+      const tradedQty = Math.min(order.quantity, buyOrder.quantity);
+
+      executedTrades.push(
+        this.recordTrade(buyOrder, order, tradedQty, buyOrder.price)
+      );
+
+      order.quantity -= tradedQty;
+      buyOrder.quantity -= tradedQty;
+
+      if (buyOrder.quantity === 0) {
+        this.buyOrders.splice(i, 1); // Remove completed order
+      } else {
+        i++; // Move to next order
+      }
+    }
+
+    // Add remaining order to book if not fully filled
+    if (order.quantity > 0) {
+      this.sellOrders.push(order);
+    }
+
+    return executedTrades;
+  }
+
+  /**
+   * Matches a market buy order against the sell order book
+   */
+  private matchMarketBuy(order: Order): Trade[] {
+    const executedTrades: Trade[] = [];
+
     // Sort by best price (lowest) and earliest timestamp
     this.sellOrders.sort(
       (a, b) => a.price - b.price || a.timestamp - b.timestamp
@@ -65,20 +238,30 @@ export class OrderBook implements OrderBook {
       const sellOrder = this.sellOrders[i];
       const tradedQty = Math.min(order.quantity, sellOrder.quantity);
 
-      console.log(`Market BUY: ${tradedQty} @ ${sellOrder.price}`);
+      executedTrades.push(
+        this.recordTrade(order, sellOrder, tradedQty, sellOrder.price)
+      );
 
       order.quantity -= tradedQty;
       sellOrder.quantity -= tradedQty;
 
       if (sellOrder.quantity === 0) {
-        this.sellOrders.splice(i, 1); // Don't increment i
+        this.sellOrders.splice(i, 1); // Remove completed order
       } else {
-        i++; // Only move to next order if current isn't fully filled
+        i++; // Move to next order
       }
     }
+
+    return executedTrades;
   }
 
-  matchMarketSell(order: Order): void {
+  /**
+   * Matches a market sell order against the buy order book
+   */
+  private matchMarketSell(order: Order): Trade[] {
+    const executedTrades: Trade[] = [];
+
+    // Sort by best price (highest) and earliest timestamp
     this.buyOrders.sort(
       (a, b) => b.price - a.price || a.timestamp - b.timestamp
     );
@@ -87,105 +270,20 @@ export class OrderBook implements OrderBook {
       const buyOrder = this.buyOrders[i];
       const tradedQty = Math.min(order.quantity, buyOrder.quantity);
 
-      console.log(`Market SELL: ${tradedQty} @ ${buyOrder.price}`);
+      executedTrades.push(
+        this.recordTrade(buyOrder, order, tradedQty, buyOrder.price)
+      );
 
       order.quantity -= tradedQty;
       buyOrder.quantity -= tradedQty;
 
       if (buyOrder.quantity === 0) {
-        this.buyOrders.splice(i, 1);
+        this.buyOrders.splice(i, 1); // Remove completed order
       } else {
-        i++;
-      }
-    }
-  }
-
-  matchBuy(order: Order): void {
-    this.sellOrders.sort(
-      (a, b) => a.price - b.price || a.timestamp - b.timestamp
-    );
-
-    for (let i = 0; i < this.sellOrders.length && order.quantity > 0; ) {
-      const sell = this.sellOrders[i];
-
-      if (sell.price > order.price) break;
-
-      const tradedQty = Math.min(order.quantity, sell.quantity);
-      console.log(`Limit BUY matched: ${tradedQty} @ ${sell.price}`);
-
-      this.tradeHistory.push({
-        buyOrderId: order.id,
-        sellOrderId: sell.id,
-        price: sell.price,
-        quantity: tradedQty,
-        timestamp: Date.now(),
-      });
-
-      order.quantity -= tradedQty;
-      sell.quantity -= tradedQty;
-
-      if (sell.quantity === 0) {
-        this.sellOrders.splice(i, 1);
-      } else {
-        i++;
+        i++; // Move to next order
       }
     }
 
-    if (order.quantity > 0) {
-      this.buyOrders.push(order);
-    }
-  }
-
-  matchSell(order: Order): void {
-    this.buyOrders.sort(
-      (a, b) => b.price - a.price || a.timestamp - b.timestamp
-    );
-
-    for (let i = 0; i < this.buyOrders.length && order.quantity > 0; ) {
-      const buy = this.buyOrders[i];
-
-      if (buy.price < order.price) break;
-
-      const tradedQty = Math.min(order.quantity, buy.quantity);
-      console.log(`Limit SELL matched: ${tradedQty} @ ${buy.price}`);
-
-      this.tradeHistory.push({
-        buyOrderId: buy.id,
-        sellOrderId: order.id,
-        price: buy.price,
-        quantity: tradedQty,
-        timestamp: Date.now(),
-      });
-
-      order.quantity -= tradedQty;
-      buy.quantity -= tradedQty;
-
-      if (buy.quantity === 0) {
-        this.buyOrders.splice(i, 1);
-      } else {
-        i++;
-      }
-    }
-
-    if (order.quantity > 0) {
-      this.sellOrders.push(order);
-    }
-  }
-
-  addOrder(order: Order): void {
-    switch (order.type) {
-      case "buy":
-        this.matchBuy(order);
-        break;
-      case "sell":
-        this.matchSell(order);
-        break;
-      case "market_buy":
-        this.matchMarketBuy(order);
-        break;
-      case "market_sell":
-        this.matchMarketSell(order);
-        break;
-    }
+    return executedTrades;
   }
 }
