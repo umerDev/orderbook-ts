@@ -17,6 +17,7 @@ export class OrderBook {
 
   getBestBid() {
     if (this.buyOrders.length === 0) return null;
+    this.buyOrders.sort((a, b) => b.price - a.price);
     return this.buyOrders[0];
   }
 

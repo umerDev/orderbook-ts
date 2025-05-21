@@ -63,4 +63,31 @@ describe("orderbook", () => {
     // assert - Add the order to the orderbook
     expect(bestBid).toEqual(order);
   });
+
+  it("should return the highest price buy order as best bid", () => {
+    // arrange - Create an orderbook
+    const orderBook = new OrderBook();
+    const order1: Order = {
+      id: "1",
+      type: "buy",
+      price: 101,
+      quantity: 5,
+      timestamp: Date.now(),
+    };
+    const order2: Order = {
+      id: "2",
+      type: "buy",
+      price: 105,
+      quantity: 3,
+      timestamp: Date.now(),
+    };
+
+    // act - Add orders to the orderbook
+    orderBook.addOrder(order1);
+    orderBook.addOrder(order2);
+
+    // assert - Check the best bid
+    const bestBid = orderBook.getBestBid();
+    expect(bestBid).toEqual(order2);
+  });
 });
