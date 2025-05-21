@@ -56,7 +56,7 @@ app.get("/orderbook", (_req, res) => {
  * Retrieve the trade history log.
  */
 app.get("/trades", (_req, res) => {
-  res.json(orderBook.getTradeHistory());
+  res.json(orderBook.get().tradeHistory);
 });
 
 export default app;

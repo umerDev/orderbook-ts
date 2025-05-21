@@ -19,9 +19,10 @@ export interface Trade {
 export interface OrderBook {
   buyOrders: Order[];
   sellOrders: Order[];
+  tradeHistory: Trade[];
+  get(): { buyOrders: Order[]; sellOrders: Order[]; tradeHistory: Trade[] };
   matchBuy(order: Order): void;
   matchSell(order: Order): void;
-  get(): { buyOrders: Order[]; sellOrders: Order[] };
   addOrder(order: Order): void;
   cancelOrder(orderId: string): boolean;
   getBestBid(): Order | null;

@@ -13,11 +13,8 @@ export class OrderBook {
     return {
       buyOrders: this.buyOrders,
       sellOrders: this.sellOrders,
+      tradeHistory: this.tradeHistory,
     };
-  }
-
-  getTradeHistory(): Trade[] {
-    return this.tradeHistory;
   }
 
   getBestAsk(): Order | null {

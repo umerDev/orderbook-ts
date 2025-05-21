@@ -208,7 +208,7 @@ describe("OrderBook", () => {
       orderBook.addOrder(sellOrder);
       orderBook.addOrder(buyOrder);
 
-      const trades = orderBook.getTradeHistory();
+      const trades = orderBook.get().tradeHistory;
 
       // Assert
       expect(trades.length).toBe(1);
