@@ -90,4 +90,25 @@ describe("orderbook", () => {
     const bestBid = orderBook.getBestBid();
     expect(bestBid).toEqual(order2);
   });
+
+  it("should cancel an order", () => {
+    // arrange - Create an orderbook
+    const orderbook = new OrderBook();
+
+    const order: Order = {
+      id: "1",
+      type: "buy",
+      price: 100,
+      quantity: 10,
+      timestamp: Date.now(),
+    };
+
+    // act - Cancel the order
+    orderbook.addOrder(order);
+    const cancelOrder = orderbook.cancelOrder(order.id);
+
+    // assert - Check the orderbook
+    expect(cancelOrder).toBe(true);
+    expect(orderbook.get().buyOrders).toEqual([]);
+  });
 });

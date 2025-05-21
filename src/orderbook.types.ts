@@ -12,7 +12,7 @@ export interface OrderBook {
   buyOrders: Order[];
   sellOrders: Order[];
   addOrder(order: Order): void;
-  cancelOrder(orderId: string): void;
+  cancelOrder(orderId: string): boolean;
   getBestBid(): Order | null;
   getBestAsk(): Order | null;
 }

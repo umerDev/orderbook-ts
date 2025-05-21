@@ -15,6 +15,17 @@ export class OrderBook {
     };
   }
 
+  cancelOrder(orderId: string): boolean {
+    for (const orders of [this.buyOrders, this.sellOrders]) {
+      const index = orders.findIndex((order) => order.id === orderId);
+      if (index !== -1) {
+        orders.splice(index, 1);
+        return true;
+      }
+    }
+    return false;
+  }
+
   getBestBid(): Order | null {
     if (this.buyOrders.length === 0) return null;
     return this.buyOrders.reduce((best, curr) => {
