@@ -15,10 +15,17 @@ export class OrderBook {
     };
   }
 
-  getBestBid() {
+  getBestBid(): Order | null {
     if (this.buyOrders.length === 0) return null;
-    this.buyOrders.sort((a, b) => b.price - a.price);
-    return this.buyOrders[0];
+    return this.buyOrders.reduce((best, curr) => {
+      if (
+        curr.price > best.price ||
+        (curr.price === best.price && curr.timestamp < best.timestamp)
+      ) {
+        return curr;
+      }
+      return best;
+    });
   }
 
   addOrder(order: Order): void {
