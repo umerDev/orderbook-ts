@@ -1,5 +1,6 @@
-const world = "world";
+import app from "./src/server";
+const port = 3000;
 
-export function hello(who: string = world): string {
-  return `Hello ${who}! `;
-}
+app.listen(port, () => {
+  console.log(`Order book API running at http://localhost:${port}`);
+});

@@ -18,7 +18,7 @@ A TypeScript implementation of a financial order book using **Test-Driven Develo
 Each order contains:
 
 - `id`: Unique identifier
-- `type`: `"buy"` or `"sell"`
+- `type`: `"buy"`, `"sell"`, `"market_buy"`, or `"market_sell"`
 - `price`: Price per unit (optional for market orders)
 - `quantity`: Number of units
 - `timestamp`: Time the order was created
@@ -26,21 +26,70 @@ Each order contains:
 ## 🛠️ API Methods
 
 - `addOrder(order: Order)`: Inserts an order and attempts to match it.
-- `cancelOrder(order: Order)`: Removes the specified order from the order book.
+- `cancelOrder(orderId: string)`: Removes the specified order from the order book.
 - `getBestBid()`: Returns the highest buy order.
 - `getBestAsk()`: Returns the lowest sell order.
-- `get()`: Returns the current state of the order book (both buy and sell sides).
+- `getTradeHistory()`: Returns an array of executed trades.
 
-## 🚀 Getting Started
+## 🚀 API Routes
+
+| Method | Endpoint      | Description                      | Request Body      | Response                                                          |
+| ------ | ------------- | -------------------------------- | ----------------- | ----------------------------------------------------------------- |
+| POST   | `/orders`     | Add a new order                  | JSON Order object | `{ message: "Order added" }`                                      |
+| DELETE | `/orders/:id` | Cancel an existing order         | —                 | `{ message: "Order canceled" }` or `{ error: "Order not found" }` |
+| GET    | `/orderbook`  | Get the current best bid and ask | —                 | `{ bestBid: Order, bestAsk: Order }`                              |
+| GET    | `/trades`     | Get the list of executed trades  | —                 | Array of trade objects                                            |
+
+## 💻 Getting Started
 
 1. Install dependencies
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-2. Run the tests
+2. Start the server
 
-   ```bash
-   npm run test
-   ```
+```bash
+npm run start
+```
+
+3. Run tests
+
+```bash
+npm run test
+```
+
+## 🔧 Example cURL Requests
+
+Add a buy order:
+
+```bash
+curl -X POST http://localhost:3000/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "b1",
+    "type": "buy",
+    "price": 100,
+    "quantity": 10,
+    "timestamp": 1684200000000
+  }'
+```
+
+Cancel an order:
+
+```bash
+curl -X DELETE http://localhost:3000/orders/b1
+```
+
+Get best bid and ask:
+
+```bash
+curl http://localhost:3000/orderbook
+```
+
+Get trade history:
+
+```bash
+curl http://localhost:3000/trades
+```
