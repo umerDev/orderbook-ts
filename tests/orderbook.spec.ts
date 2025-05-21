@@ -1,355 +1,223 @@
 import { OrderBook } from "../src/orderbook";
 import { Order } from "../src/orderbook.types";
 
-// Requirements:
-// Buy orders (bids) sorted by descending price (highest first)
-// Sell orders (asks) sorted by ascending price (lowest first)
+describe("OrderBook", () => {
+  let orderBook: OrderBook;
 
-// Match when bid price ≥ ask price
-
-// Orders can be:
-// Limit orders: specify price
-// Market orders: execute immediately at best available price
-
-// Orders: each has id, type (buy or sell), price, quantity, and timestamp.
-// addOrder(Order order) — main method to insert and try to match
-// cancelOrder(Order order) — remove order from order book
-// getBestBid() — return the highest buy order
-// getBestAsk() — return the lowest sell order
-// get() — return the order book (buy and sell orders)
-
-describe("orderbook", () => {
-  it("should create an orderbook", () => {
-    const orderbook = new OrderBook();
-
-    expect(orderbook).toBeDefined();
+  beforeEach(() => {
+    orderBook = new OrderBook();
   });
 
-  it("should add a buy order to the orderbook", () => {
-    // arrange - Create an orderbook
-    const orderbook = new OrderBook();
+  const createOrder = (
+    id: string,
+    type: Order["type"],
+    price: number,
+    quantity: number,
+    timestamp = Date.now()
+  ): Order => {
+    return { id, type, price, quantity, timestamp };
+  };
 
-    const order: Order = {
-      id: "1",
-      type: "buy",
-      price: 100,
-      quantity: 10,
-      timestamp: Date.now(),
-    };
+  describe("basic operations", () => {
+    it("should create an orderbook instance", () => {
+      // Arrange & Act done in beforeEach
 
-    // act - Create a buy order
-    orderbook.addOrder(order);
+      // Assert
+      expect(orderBook).toBeDefined();
+    });
 
-    // assert - Add the order to the orderbook
-    expect(orderbook.get().buyOrders).toEqual([order]);
+    it("should add a buy order", () => {
+      // Arrange
+      const order = createOrder("1", "buy", 100, 10);
+
+      // Act
+      orderBook.addOrder(order);
+
+      // Assert
+      expect(orderBook.get().buyOrders).toEqual([order]);
+    });
+
+    it("should cancel an order", () => {
+      // Arrange
+      const order = createOrder("1", "buy", 100, 10);
+      orderBook.addOrder(order);
+
+      // Act
+      const cancelled = orderBook.cancelOrder(order.id);
+
+      // Assert
+      expect(cancelled).toBe(true);
+      expect(orderBook.get().buyOrders).toEqual([]);
+    });
   });
 
-  it("should get the best bid", () => {
-    // arrange - Create an orderbook
-    const orderbook = new OrderBook();
+  describe("best bid and best ask", () => {
+    it("should get the best bid", () => {
+      // Arrange
+      const order = createOrder("1", "buy", 100, 10);
+      orderBook.addOrder(order);
 
-    const order: Order = {
-      id: "1",
-      type: "buy",
-      price: 100,
-      quantity: 10,
-      timestamp: Date.now(),
-    };
+      // Act
+      const bestBid = orderBook.getBestBid();
 
-    // act - Create a buy order
-    orderbook.addOrder(order);
-    const bestBid = orderbook.getBestBid();
+      // Assert
+      expect(bestBid).toEqual(order);
+    });
 
-    // assert - Add the order to the orderbook
-    expect(bestBid).toEqual(order);
+    it("should return highest price buy order as best bid", () => {
+      // Arrange
+      const order1 = createOrder("1", "buy", 101, 5);
+      const order2 = createOrder("2", "buy", 105, 3);
+      orderBook.addOrder(order1);
+      orderBook.addOrder(order2);
+
+      // Act
+      const bestBid = orderBook.getBestBid();
+
+      // Assert
+      expect(bestBid).toEqual(order2);
+    });
+
+    it("should get the best ask", () => {
+      // Arrange
+      const order = createOrder("1", "sell", 100, 10);
+      orderBook.addOrder(order);
+
+      // Act
+      const bestAsk = orderBook.getBestAsk();
+
+      // Assert
+      expect(bestAsk).toEqual(order);
+    });
+
+    it("should return lowest price sell order as best ask", () => {
+      // Arrange
+      const order1 = createOrder("1", "sell", 101, 5);
+      const order2 = createOrder("2", "sell", 105, 3);
+      orderBook.addOrder(order1);
+      orderBook.addOrder(order2);
+
+      // Act
+      const bestAsk = orderBook.getBestAsk();
+
+      // Assert
+      expect(bestAsk).toEqual(order1);
+    });
   });
 
-  it("should return the highest price buy order as best bid", () => {
-    // arrange - Create an orderbook
-    const orderBook = new OrderBook();
-    const order1: Order = {
-      id: "1",
-      type: "buy",
-      price: 101,
-      quantity: 5,
-      timestamp: Date.now(),
-    };
-    const order2: Order = {
-      id: "2",
-      type: "buy",
-      price: 105,
-      quantity: 3,
-      timestamp: Date.now(),
-    };
+  describe("market orders", () => {
+    it("should execute market buy against best sell", () => {
+      // Arrange
+      const sellOrder = createOrder("s1", "sell", 100, 5);
+      orderBook.addOrder(sellOrder);
 
-    // act - Add orders to the orderbook
-    orderBook.addOrder(order1);
-    orderBook.addOrder(order2);
+      const marketBuy = createOrder("mb1", "market_buy", 0, 3);
 
-    // assert - Check the best bid
-    const bestBid = orderBook.getBestBid();
-    expect(bestBid).toEqual(order2);
+      // Act
+      orderBook.addOrder(marketBuy);
+      const bestAsk = orderBook.getBestAsk();
+
+      // Assert
+      expect(bestAsk?.quantity).toBe(2);
+    });
+
+    it("should execute market sell against best buy", () => {
+      // Arrange
+      const buyOrder = createOrder("b1", "buy", 120, 4);
+      orderBook.addOrder(buyOrder);
+
+      const marketSell = createOrder("ms1", "market_sell", 0, 2);
+
+      // Act
+      orderBook.addOrder(marketSell);
+      const bestBid = orderBook.getBestBid();
+
+      // Assert
+      expect(bestBid?.quantity).toBe(2);
+    });
   });
 
-  it("should cancel an order", () => {
-    // arrange - Create an orderbook
-    const orderbook = new OrderBook();
+  describe("limit order matching", () => {
+    it("should fully match buy limit order with existing sell", () => {
+      // Arrange
+      const sellOrder = createOrder("s1", "sell", 100, 5);
+      const buyOrder = createOrder("b1", "buy", 100, 5);
 
-    const order: Order = {
-      id: "1",
-      type: "buy",
-      price: 100,
-      quantity: 10,
-      timestamp: Date.now(),
-    };
+      // Act
+      orderBook.addOrder(sellOrder);
+      orderBook.addOrder(buyOrder);
 
-    // act - Cancel the order
-    orderbook.addOrder(order);
-    const cancelOrder = orderbook.cancelOrder(order.id);
+      // Assert
+      expect(orderBook.getBestAsk()).toBeNull();
+      expect(orderBook.getBestBid()).toBeNull();
+    });
 
-    // assert - Check the orderbook
-    expect(cancelOrder).toBe(true);
-    expect(orderbook.get().buyOrders).toEqual([]);
+    it("should partially match buy limit order and keep remainder", () => {
+      // Arrange
+      const sellOrder = createOrder("s1", "sell", 100, 3);
+      const buyOrder = createOrder("b1", "buy", 100, 5);
+
+      // Act
+      orderBook.addOrder(sellOrder);
+      orderBook.addOrder(buyOrder);
+
+      const bestBid = orderBook.getBestBid();
+
+      // Assert
+      expect(bestBid?.quantity).toBe(2);
+      expect(orderBook.getBestAsk()).toBeNull();
+    });
+
+    it("should fully match sell limit order with existing buy", () => {
+      // Arrange
+      const buyOrder = createOrder("b1", "buy", 105, 5);
+      const sellOrder = createOrder("s1", "sell", 100, 5);
+
+      // Act
+      orderBook.addOrder(buyOrder);
+      orderBook.addOrder(sellOrder);
+
+      // Assert
+      expect(orderBook.getBestBid()).toBeNull();
+      expect(orderBook.getBestAsk()).toBeNull();
+    });
+
+    it("should partially match sell limit order and retain remainder", () => {
+      // Arrange
+      const buyOrder = createOrder("b1", "buy", 105, 2);
+      const sellOrder = createOrder("s1", "sell", 100, 5);
+
+      // Act
+      orderBook.addOrder(buyOrder);
+      orderBook.addOrder(sellOrder);
+
+      const bestAsk = orderBook.getBestAsk();
+
+      // Assert
+      expect(bestAsk?.quantity).toBe(3);
+    });
   });
 
-  it("should return the lowest price sell order as best ask", () => {
-    // arrange - Create an orderbook
-    const orderBook = new OrderBook();
+  describe("trade history", () => {
+    it("should record trades in trade history log", () => {
+      // Arrange
+      const sellOrder = createOrder("s1", "sell", 95, 3);
+      const buyOrder = createOrder("b1", "buy", 100, 5);
 
-    const order1: Order = {
-      id: "1",
-      type: "sell",
-      price: 101,
-      quantity: 5,
-      timestamp: Date.now(),
-    };
-    const order2: Order = {
-      id: "2",
-      type: "sell",
-      price: 105,
-      quantity: 3,
-      timestamp: Date.now(),
-    };
+      // Act
+      orderBook.addOrder(sellOrder);
+      orderBook.addOrder(buyOrder);
 
-    // act - Add orders to the orderbook
-    orderBook.addOrder(order1);
-    orderBook.addOrder(order2);
+      const trades = orderBook.getTradeHistory();
 
-    // assert - Check the best ask
-    const bestAsk = orderBook.getBestAsk();
-    expect(bestAsk).toEqual(order1);
-  });
-
-  it("should execute a market buy against the best available sell order", () => {
-    // arrange - Create an orderbook
-    const orderBook = new OrderBook();
-
-    const sellOrder: Order = {
-      id: "s1",
-      type: "sell",
-      price: 100,
-      quantity: 5,
-      timestamp: Date.now(),
-    };
-
-    // act - Add a sell order to the orderbook
-    orderBook.addOrder(sellOrder);
-
-    const marketBuy: Order = {
-      id: "mb1",
-      type: "market_buy",
-      price: 0, // price is ignored
-      quantity: 3,
-      timestamp: Date.now(),
-    };
-
-    orderBook.addOrder(marketBuy);
-
-    const bestAsk = orderBook.getBestAsk();
-
-    // assert - Check the orderbook
-    expect(bestAsk?.quantity).toBe(2); // 5 - 3
-  });
-
-  it("should execute a market sell against the best available buy order", () => {
-    // arrange - Create an orderbook
-    const orderBook = new OrderBook();
-
-    const buyOrder: Order = {
-      id: "b1",
-      type: "buy",
-      price: 120,
-      quantity: 4,
-      timestamp: Date.now(),
-    };
-    orderBook.addOrder(buyOrder);
-
-    const marketSell: Order = {
-      id: "ms1",
-      type: "market_sell",
-      price: 0,
-      quantity: 2,
-      timestamp: Date.now(),
-    };
-
-    // act - Add a market sell order to the orderbook
-    orderBook.addOrder(marketSell);
-
-    const bestBid = orderBook.getBestBid();
-
-    // assert - Check the orderbook
-    expect(bestBid?.quantity).toBe(2); // 4 - 2
-  });
-
-  it("should fully match a buy limit order with existing sell order", () => {
-    // arrange - Create an orderbook
-    const orderBook = new OrderBook();
-
-    const sellOrder: Order = {
-      id: "s1",
-      type: "sell",
-      price: 100,
-      quantity: 5,
-      timestamp: Date.now(),
-    };
-
-    const buyOrder: Order = {
-      id: "b1",
-      type: "buy",
-      price: 100,
-      quantity: 5,
-      timestamp: Date.now(),
-    };
-    // act - Add orders to the orderbook
-    orderBook.addOrder(sellOrder);
-    orderBook.addOrder(buyOrder);
-
-    // assert - Check the orderbook
-    expect(orderBook.getBestAsk()).toBeNull();
-    expect(orderBook.getBestBid()).toBeNull(); // fully matched
-  });
-
-  it("should partially match a buy limit order and keep remaining in the book", () => {
-    // arrange - Create an orderbook
-    const orderBook = new OrderBook();
-
-    const sellOrder: Order = {
-      id: "s1",
-      type: "sell",
-      price: 100,
-      quantity: 3,
-      timestamp: Date.now(),
-    };
-
-    const buyOrder: Order = {
-      id: "b1",
-      type: "buy",
-      price: 100,
-      quantity: 5,
-      timestamp: Date.now(),
-    };
-
-    // act - Add orders to the orderbook
-    orderBook.addOrder(sellOrder);
-    orderBook.addOrder(buyOrder);
-
-    const bestBid = orderBook.getBestBid();
-
-    // assert - Check the orderbook
-    expect(bestBid?.quantity).toBe(2); // 5 - 3
-    expect(orderBook.getBestAsk()).toBeNull(); // fully consumed sell order
-  });
-
-  it("should match a sell limit order against buy orders", () => {
-    // arrange - Create an orderbook
-    const orderBook = new OrderBook();
-
-    const buyOrder: Order = {
-      id: "b1",
-      type: "buy",
-      price: 105,
-      quantity: 5,
-      timestamp: Date.now(),
-    };
-
-    const sellOrder: Order = {
-      id: "s1",
-      type: "sell",
-      price: 100,
-      quantity: 5,
-      timestamp: Date.now(),
-    };
-
-    // act - Create an orderbook and add orders
-    orderBook.addOrder(buyOrder);
-    orderBook.addOrder(sellOrder);
-
-    // assert - Check the orderbook
-    expect(orderBook.getBestBid()).toBeNull();
-    expect(orderBook.getBestAsk()).toBeNull();
-  });
-
-  it("should partially match a sell limit order and retain remainder", () => {
-    // arrange - Create an orderbook
-    const orderBook = new OrderBook();
-
-    const buyOrder: Order = {
-      id: "b1",
-      type: "buy",
-      price: 105,
-      quantity: 2,
-      timestamp: Date.now(),
-    };
-
-    const sellOrder: Order = {
-      id: "s1",
-      type: "sell",
-      price: 100,
-      quantity: 5,
-      timestamp: Date.now(),
-    };
-
-    // act - Add orders to the orderbook
-    orderBook.addOrder(buyOrder);
-    orderBook.addOrder(sellOrder);
-    const bestAsk = orderBook.getBestAsk();
-
-    // assert - Check the orderbook
-    expect(bestAsk?.quantity).toBe(3); // 5 - 2
-  });
-
-  it("should record trades in trade history log", () => {
-    // arrange - Create an orderbook
-    const orderBook = new OrderBook();
-
-    const buyOrder: Order = {
-      id: "b1",
-      type: "buy",
-      price: 100,
-      quantity: 5,
-      timestamp: Date.now(),
-    };
-
-    const sellOrder: Order = {
-      id: "s1",
-      type: "sell",
-      price: 95,
-      quantity: 3,
-      timestamp: Date.now(),
-    };
-
-    // Add resting order first
-    orderBook.addOrder(sellOrder);
-    orderBook.addOrder(buyOrder);
-    const trades = orderBook.getTradeHistory();
-
-    // assert - Check the orderbook
-    expect(trades.length).toBe(1);
-    expect(trades[0]).toMatchObject({
-      buyOrderId: "b1",
-      sellOrderId: "s1",
-      price: 95, // now matches sell resting order price
-      quantity: 3,
+      // Assert
+      expect(trades.length).toBe(1);
+      expect(trades[0]).toMatchObject({
+        buyOrderId: "b1",
+        sellOrderId: "s1",
+        price: 95,
+        quantity: 3,
+      });
     });
   });
 });

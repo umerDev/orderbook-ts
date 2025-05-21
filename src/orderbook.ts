@@ -16,7 +16,6 @@ export class OrderBook {
     };
   }
 
-  // Add new method:
   getTradeHistory(): Trade[] {
     return this.tradeHistory;
   }
