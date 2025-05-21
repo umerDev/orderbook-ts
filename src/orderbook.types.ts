@@ -11,6 +11,9 @@ export interface Order {
 export interface OrderBook {
   buyOrders: Order[];
   sellOrders: Order[];
+  matchBuy(order: Order): void;
+  matchSell(order: Order): void;
+  get(): { buyOrders: Order[]; sellOrders: Order[] };
   addOrder(order: Order): void;
   cancelOrder(orderId: string): boolean;
   getBestBid(): Order | null;

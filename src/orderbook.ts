@@ -98,13 +98,69 @@ export class OrderBook {
     }
   }
 
+  matchBuy(order: Order): void {
+    this.sellOrders.sort(
+      (a, b) => a.price - b.price || a.timestamp - b.timestamp
+    );
+
+    for (let i = 0; i < this.sellOrders.length && order.quantity > 0; ) {
+      const sell = this.sellOrders[i];
+
+      if (sell.price > order.price) break;
+
+      const tradedQty = Math.min(order.quantity, sell.quantity);
+      console.log(`Limit BUY matched: ${tradedQty} @ ${sell.price}`);
+
+      order.quantity -= tradedQty;
+      sell.quantity -= tradedQty;
+
+      if (sell.quantity === 0) {
+        this.sellOrders.splice(i, 1);
+      } else {
+        i++;
+      }
+    }
+
+    if (order.quantity > 0) {
+      this.buyOrders.push(order);
+    }
+  }
+
+  matchSell(order: Order): void {
+    this.buyOrders.sort(
+      (a, b) => b.price - a.price || a.timestamp - b.timestamp
+    );
+
+    for (let i = 0; i < this.buyOrders.length && order.quantity > 0; ) {
+      const buy = this.buyOrders[i];
+
+      if (buy.price < order.price) break;
+
+      const tradedQty = Math.min(order.quantity, buy.quantity);
+      console.log(`Limit SELL matched: ${tradedQty} @ ${buy.price}`);
+
+      order.quantity -= tradedQty;
+      buy.quantity -= tradedQty;
+
+      if (buy.quantity === 0) {
+        this.buyOrders.splice(i, 1);
+      } else {
+        i++;
+      }
+    }
+
+    if (order.quantity > 0) {
+      this.sellOrders.push(order);
+    }
+  }
+
   addOrder(order: Order): void {
     switch (order.type) {
       case "buy":
-        this.buyOrders.push(order);
+        this.matchBuy(order);
         break;
       case "sell":
-        this.sellOrders.push(order);
+        this.matchSell(order);
         break;
       case "market_buy":
         this.matchMarketBuy(order);
