@@ -1,4 +1,4 @@
-export type OrderType = "buy" | "sell" | "market_sell" | "market_buy";
+export type OrderType = "buy" | "sell" | "market_buy" | "market_sell";
 
 export interface Order {
   id: string;
@@ -16,15 +16,33 @@ export interface Trade {
   timestamp: number;
 }
 
-export interface OrderBook {
-  buyOrders: Order[];
-  sellOrders: Order[];
-  tradeHistory: Trade[];
-  get(): { buyOrders: Order[]; sellOrders: Order[]; tradeHistory: Trade[] };
-  matchBuy(order: Order): void;
-  matchSell(order: Order): void;
-  addOrder(order: Order): void;
-  cancelOrder(orderId: string): boolean;
-  getBestBid(): Order | null;
+export interface OrderBookInterface {
+  /**
+   * Get current state of the order book
+   */
+  get(): {
+    buyOrders: Order[];
+    sellOrders: Order[];
+    tradeHistory: Trade[];
+  };
+
+  /**
+   * Get the best ask (lowest sell order)
+   */
   getBestAsk(): Order | null;
+
+  /**
+   * Get the best bid (highest buy order)
+   */
+  getBestBid(): Order | null;
+
+  /**
+   * Cancel an order by ID
+   */
+  cancelOrder(orderId: string): boolean;
+
+  /**
+   * Add an order to the book and attempt matching
+   */
+  addOrder(order: Order): Trade[];
 }
