@@ -1,6 +1,6 @@
 import { Order, Trade } from "./orderbook.types";
 
-export class OrderBook {
+export class OrderBook implements OrderBook {
   private buyOrders: Order[] = [];
   private sellOrders: Order[] = [];
   private tradeHistory: Trade[] = [];
