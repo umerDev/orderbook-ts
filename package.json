@@ -1,0 +1,35 @@
+{
+  "name": "typescript-template",
+  "version": "1.0.0",
+  "description": "A Typescript and Jest template",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx tsc",
+    "start": "npx ts-node index.ts",
+    "test": "jest --updateSnapshot --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/umerDev/typescript-template.git"
+  },
+  "keywords": [
+    "Typescript",
+    "Jest"
+  ],
+  "author": "Umer",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/umerDev/typescript-template/issues"
+  },
+  "homepage": "https://github.com/umerDev/typescript-template#readme",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "ts-jest": "^29.1.2"
+  }
+}
