@@ -163,43 +163,43 @@ Market orders follow a similar process but with key differences:
 ### Code Example: Limit Buy Matching
 
 ```typescript
-private matchLimitBuy(order: Order): Trade[] {
-  const executedTrades: Trade[] = [];
+  private matchLimitBuy(order: Order): Trade[] {
+    const executedTrades: Trade[] = [];
 
-  // Sort by best price (lowest) and earliest timestamp
-  this.sellOrders.sort(
-    (a, b) => a.price - b.price || a.timestamp - b.timestamp
-  );
-
-  for (let i = 0; i < this.sellOrders.length && order.quantity > 0; ) {
-    const sellOrder = this.sellOrders[i];
-
-    // Stop matching if sell price is higher than buy limit
-    if (sellOrder.price > order.price) break;
-
-    const tradedQty = Math.min(order.quantity, sellOrder.quantity);
-
-    executedTrades.push(
-      this.recordTrade(order, sellOrder, tradedQty, sellOrder.price)
+    // Sort by best price (lowest) and earliest timestamp
+    this.sellOrders.sort(
+      (a, b) => a.price - b.price || a.timestamp - b.timestamp
     );
 
-    order.quantity -= tradedQty;
-    sellOrder.quantity -= tradedQty;
+    for (let i = 0; i < this.sellOrders.length && order.quantity > 0; ) {
+      const sellOrder = this.sellOrders[i];
 
-    if (sellOrder.quantity === 0) {
-      this.sellOrders.splice(i, 1); // Remove completed order
-    } else {
-      i++; // Move to next order
+      // Stop matching if sell price is higher than buy limit
+      if (sellOrder.price > order.price) break;
+
+      const tradedQty = Math.min(order.quantity, sellOrder.quantity);
+
+      executedTrades.push(
+        this.recordTrade(order, sellOrder, tradedQty, sellOrder.price)
+      );
+
+      order.quantity -= tradedQty;
+      sellOrder.quantity -= tradedQty;
+
+      if (sellOrder.quantity === 0) {
+        this.sellOrders.splice(i, 1); // Remove completed order
+      } else {
+        i++; // Move to next order
+      }
     }
-  }
 
-  // Add remaining order to book if not fully filled
-  if (order.quantity > 0) {
-    this.buyOrders.push(order);
-  }
+    // Add remaining order to book if not fully filled
+    if (order.quantity > 0) {
+      this.buyOrders.push(order);
+    }
 
-  return executedTrades;
-}
+    return executedTrades;
+  }
 ```
 
 ## Example Usage
