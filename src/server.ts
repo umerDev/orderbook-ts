@@ -17,6 +17,10 @@ const orderBook = new OrderBook();
 app.post("/orders", (req, res) => {
   const order: Order = req.body;
 
+  if (!order || !order.id || !order.price || !order.quantity) {
+    res.status(400).json({ error: "Invalid order format" });
+  }
+
   try {
     orderBook.addOrder(order);
     res.status(201).json({ message: "Order added" });
