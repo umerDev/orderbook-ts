@@ -20,6 +20,18 @@ export class OrderBook implements OrderBookInterface {
     };
   }
 
+  sortSellOrders() {
+    this.sellOrders.sort(
+      (a, b) => a.price - b.price || a.timestamp - b.timestamp
+    );
+  }
+
+  sortBuyOrders() {
+    this.buyOrders.sort(
+      (a, b) => b.price - a.price || a.timestamp - b.timestamp
+    );
+  }
+
   /**
    * Returns the best ask (lowest sell) order
    */
@@ -148,9 +160,7 @@ export class OrderBook implements OrderBookInterface {
     const executedTrades: Trade[] = [];
 
     // Sort by best price (lowest) and earliest timestamp
-    this.sellOrders.sort(
-      (a, b) => a.price - b.price || a.timestamp - b.timestamp
-    );
+    this.sortSellOrders();
 
     for (let i = 0; i < this.sellOrders.length && order.quantity > 0; ) {
       const sellOrder = this.sellOrders[i];
@@ -189,9 +199,7 @@ export class OrderBook implements OrderBookInterface {
     const executedTrades: Trade[] = [];
 
     // Sort by best price (highest) and earliest timestamp
-    this.buyOrders.sort(
-      (a, b) => b.price - a.price || a.timestamp - b.timestamp
-    );
+    this.sortBuyOrders();
 
     for (let i = 0; i < this.buyOrders.length && order.quantity > 0; ) {
       const buyOrder = this.buyOrders[i];
@@ -230,9 +238,7 @@ export class OrderBook implements OrderBookInterface {
     const executedTrades: Trade[] = [];
 
     // Sort by best price (lowest) and earliest timestamp
-    this.sellOrders.sort(
-      (a, b) => a.price - b.price || a.timestamp - b.timestamp
-    );
+    this.sortSellOrders();
 
     for (let i = 0; i < this.sellOrders.length && order.quantity > 0; ) {
       const sellOrder = this.sellOrders[i];
@@ -262,9 +268,7 @@ export class OrderBook implements OrderBookInterface {
     const executedTrades: Trade[] = [];
 
     // Sort by best price (highest) and earliest timestamp
-    this.buyOrders.sort(
-      (a, b) => b.price - a.price || a.timestamp - b.timestamp
-    );
+    this.sortBuyOrders();
 
     for (let i = 0; i < this.buyOrders.length && order.quantity > 0; ) {
       const buyOrder = this.buyOrders[i];
