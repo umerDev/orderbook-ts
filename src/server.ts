@@ -1,14 +1,12 @@
 import cors from "cors";
 import express from "express";
-import { OrderBook } from "./orderbook";
+import { orderBook } from "./orderbook.instance";
 import { Order } from "./orderbook.types";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-const orderBook = new OrderBook();
 
 /**
  * POST /orders
@@ -20,7 +18,6 @@ app.post("/orders", (req, res) => {
   if (!order || !order.id || !order.price || !order.quantity) {
     res.status(400).json({ error: "Invalid order format" });
   }
-
   try {
     orderBook.addOrder(order);
     res.status(201).json({ message: "Order added" });

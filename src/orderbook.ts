@@ -1,5 +1,4 @@
 import { Order, OrderBookInterface, Trade } from "./orderbook.types";
-
 /**
  * OrderBook implementation that manages buy and sell orders
  * and matches them using price-time priority
@@ -8,6 +7,12 @@ export class OrderBook implements OrderBookInterface {
   private buyOrders: Order[] = [];
   private sellOrders: Order[] = [];
   private tradeHistory: Trade[] = [];
+
+  public clear(): void {
+    this.buyOrders = [];
+    this.sellOrders = [];
+    this.tradeHistory = [];
+  }
 
   /**
    * Returns the current state of the order book
@@ -79,6 +84,7 @@ export class OrderBook implements OrderBookInterface {
         return true;
       }
     }
+    console.warn("Order not found:", orderId);
     return false;
   }
 
